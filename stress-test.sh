@@ -1,5 +1,27 @@
 #!/bin/bash
 
+# Function to fetch and parse ECS service status
+check_ecs_status() {
+  echo "Checking ECS Service auto-scaling status..."
+
+  # Fetch the ECS service status
+  ecs_status=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region eu-central-1 --query "services[0].deployments[0]")
+
+  # Extract various task counts
+  running_tasks=$(echo $ecs_status | jq '.runningCount')
+  pending_tasks=$(echo $ecs_status | jq '.pendingCount')
+  provisioning_tasks=$(echo $ecs_status | jq '.provisioningCount')
+  activating_tasks=$(echo $ecs_status | jq '.activatingCount')
+  deactivating_tasks=$(echo $ecs_status | jq '.deactivatingCount')
+
+  # Output the task status
+  echo "Running tasks: $running_tasks"
+  echo "Pending tasks: $pending_tasks"
+  echo "Provisioning tasks: $provisioning_tasks"
+  echo "Activating tasks: $activating_tasks"
+  echo "Deactivating tasks: $deactivating_tasks"
+}
+
 # Check if ab (Apache Benchmark) is installed
 if ! command -v ab &> /dev/null
 then
@@ -19,31 +41,24 @@ URL=$(terraform output -raw app_url)/
 CLUSTER_NAME=$(terraform output -raw ecs_cluster_name)
 SERVICE_NAME=$(terraform output -raw ecs_service_name)
 
-# Check if ALB_URL is empty
+# Check if URL is empty
 if [ -z "$URL" ]; then
   echo "Error: URL is empty. Value is {$URL}. Please ensure Terraform has been applied successfully."
   exit 1
 fi
 
 # Configuration for the stress test
-REQUESTS=10000   # Total number of requests to simulate
+REQUESTS=5000   # Total number of requests to simulate
 CONCURRENT=1000   # Number of concurrent requests per iteration
 
-echo "Running iteration $i of $ITERATIONS"
-ab -n $CONCURRENT -c $CONCURRENT $URL
+# Call the function to check ECS status before stress test
+check_ecs_status
 
-# Check ECS status
-echo "Checking ECS Service auto-scaling status..."
+# Run Apache Benchmark for the load test
+echo "Starting load test..."
+ab -n $REQUESTS -c $CONCURRENT $URL
 
-# Fetch the ECS service status
-ecs_status=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region eu-central-1 --query "services[0].deployments[0]")
-
-# Extract running and pending task counts
-running_tasks=$(echo $ecs_status | jq '.runningCount')
-pending_tasks=$(echo $ecs_status | jq '.pendingCount')
-
-# Output the task status
-echo "Running tasks: $running_tasks"
-echo "Pending tasks: $pending_tasks"
+# Call the function to check ECS status after stress test
+check_ecs_status
 
 echo "Load test finished."
