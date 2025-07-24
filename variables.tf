@@ -69,3 +69,8 @@ variable "app_max_count" {
   type        = number
   default     = 4
 }
+
+variable "cpu_target_value" {
+  description = "Target value for CPU utilization"
+  default     = 50
+}
