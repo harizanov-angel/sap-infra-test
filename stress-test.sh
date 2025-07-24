@@ -28,35 +28,22 @@ fi
 # Configuration for the stress test
 REQUESTS=10000   # Total number of requests to simulate
 CONCURRENT=1000   # Number of concurrent requests per iteration
-ITERATIONS=$((REQUESTS / CONCURRENT))  # Number of iterations based on total requests
 
-echo "Starting load test to simulate traffic..."
+echo "Running iteration $i of $ITERATIONS"
+ab -n $CONCURRENT -c $CONCURRENT $URL
 
-# Loop to send requests in smaller chunks
-for ((i=1; i<=ITERATIONS; i++))
-do
-    echo "Running iteration $i of $ITERATIONS"
-    ab -n $CONCURRENT -c $CONCURRENT $URL
+# Check ECS status
+echo "Checking ECS Service auto-scaling status..."
 
-    # Call the function to check ECS status
-    check_ecs_status
-done
+# Fetch the ECS service status
+ecs_status=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region eu-central-1 --query "services[0].deployments[0]")
 
-echo "Load test finished. Traffic sent to ALB at $URL."
+# Extract running and pending task counts
+running_tasks=$(echo $ecs_status | jq '.runningCount')
+pending_tasks=$(echo $ecs_status | jq '.pendingCount')
 
-# Function to fetch and parse ECS service status
-check_ecs_status() {
-  echo "Checking ECS Service auto-scaling status..."
-  
-  # Fetch the ECS service status
-  ecs_status=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region eu-central-1 --query "services[0].deployments[0]")
+# Output the task status
+echo "Running tasks: $running_tasks"
+echo "Pending tasks: $pending_tasks"
 
-  # Extract running and pending task counts
-  running_tasks=$(echo $ecs_status | jq '.runningCount')
-  pending_tasks=$(echo $ecs_status | jq '.pendingCount')
-
-  # Output the task status
-  echo "Running tasks: $running_tasks"
-  echo "Pending tasks: $pending_tasks"
-}
-
+echo "Load test finished."

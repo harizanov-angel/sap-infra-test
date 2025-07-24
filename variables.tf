@@ -74,3 +74,9 @@ variable "cpu_target_value" {
   description = "Target value for CPU utilization"
   default     = 50
 }
+
+variable "memory_target_value" {
+  description = "The target memory utilization percentage for scaling"
+  type        = number
+  default     = 50
+}
