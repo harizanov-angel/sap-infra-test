@@ -17,12 +17,16 @@ resource "aws_db_instance" "main" {
   instance_class = var.db_instance_class
 
   allocated_storage     = 20
+  # Set to max 50 since this is demo.
   max_allocated_storage = 50
   storage_type          = "gp3"
   storage_encrypted     = true
 
   db_name  = var.db_name
   username = var.db_username
+
+  # Commented out since this is just a demo. Uncomment for real production.
+  multi_az = true
 
   # Use AWS managed secrets for password
   manage_master_user_password = true
