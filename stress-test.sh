@@ -8,11 +8,11 @@ check_ecs_status() {
   ecs_status=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --region eu-central-1 --query "services[0].deployments[0]")
 
   # Extract various task counts
-  running_tasks=$(echo $ecs_status | jq '.runningCount')
-  pending_tasks=$(echo $ecs_status | jq '.pendingCount')
-  provisioning_tasks=$(echo $ecs_status | jq '.provisioningCount')
-  activating_tasks=$(echo $ecs_status | jq '.activatingCount')
-  deactivating_tasks=$(echo $ecs_status | jq '.deactivatingCount')
+  running_tasks=$(echo $ecs_status | jq '.runningCount // 0')
+  pending_tasks=$(echo $ecs_status | jq '.pendingCount // 0')
+  provisioning_tasks=$(echo $ecs_status | jq '.provisioningCount // 0')
+  activating_tasks=$(echo $ecs_status | jq '.activatingCount // 0')
+  deactivating_tasks=$(echo $ecs_status | jq '.deactivatingCount // 0')
 
   # Output the task status
   echo "Running tasks: $running_tasks"
